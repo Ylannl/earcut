@@ -68,7 +68,8 @@ function filterPoints(start, end) {
     do {
         again = false;
 
-        if (!p.steiner && (equals(p, p.next) || area(p.prev, p, p.next) === 0)) {
+        // if (!p.steiner && (equals(p, p.next) || area(p.prev, p, p.next) === 0)) {
+        if (!p.steiner && equals(p, p.next)) {
             removeNode(p);
             p = end = p.prev;
             if (p === p.next) return null;
@@ -453,9 +454,9 @@ function getLeftmost(start) {
 
 // check if a point lies within a convex triangle
 function pointInTriangle(ax, ay, bx, by, cx, cy, px, py) {
-    return (cx - px) * (ay - py) - (ax - px) * (cy - py) > 0 &&
-           (ax - px) * (by - py) - (bx - px) * (ay - py) > 0 &&
-           (bx - px) * (cy - py) - (cx - px) * (by - py) > 0;
+    return (cx - px) * (ay - py) - (ax - px) * (cy - py) >= 0 &&
+           (ax - px) * (by - py) - (bx - px) * (ay - py) >= 0 &&
+           (bx - px) * (cy - py) - (cx - px) * (by - py) >= 0;
 }
 
 // check if a diagonal between two polygon nodes is valid (lies in polygon interior)
