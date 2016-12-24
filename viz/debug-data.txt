@@ -1,0 +1,73 @@
+0 300 undefined
+150 300 "hole-0"
+200 300 "hole-0"
+300 150 "hole-0"
+150 300 "hole-0"
+0 300 undefined
+300 0 undefined
+300 300 undefined
+
+0 300 undefined
+0 300 undefined
+300 0 undefined
+
+~~~~~~~~~~~~~~~~
+
+50 50 "hole-0"
+50 100 "hole-0"
+100 50 "hole-0"
+150 50 "hole-1"
+150 100 "hole-1"
+200 50 "hole-1"
+150 50 "hole-1"
+100 50 "hole-0"
+50 50 "hole-0"
+20 20 undefined
+300 20 undefined
+20 300 undefined
+20 20 undefined
+
+50 50 "hole-0"
+50 100 "hole-0"
+100 50 "hole-0"
+150 100 "hole-1"
+300 20 undefined
+
+================================
+toRemove = true;
+
+0 300 undefined
+150 300 "hole-0"
+200 300 "hole-0"
+300 150 "hole-0"
+150 300 "hole-0"
+0 300 undefined
+300 0 undefined
+300 300 undefined
+
+0 300 undefined
+150 300 "hole-0"
+200 300 "hole-0"
+300 150 "hole-0"
+300 0 undefined
+300 300 undefined
+
+~~~~~~~~~~~~~~~~
+
+50 50 "hole-0"
+50 100 "hole-0"
+100 50 "hole-0"
+150 50 "hole-1"
+150 100 "hole-1"
+200 50 "hole-1"
+50 50 "hole-0"
+20 20 undefined
+300 20 undefined
+20 300 undefined
+20 20 undefined
+
+50 50 "hole-0"
+50 100 "hole-0"
+150 100 "hole-1"
+300 20 undefined
+

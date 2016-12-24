@@ -2,6 +2,27 @@
 
 module.exports = earcut;
 
+function logNode(node) {
+    if (!node) {
+        return 0;
+    }
+    console.log(node);
+    var list = [];
+    var count = 0;
+    while (node && !node._loged) {
+        console.log(node.x, node.y, node.parentId);
+        node._loged = 1;
+        list.push(node);
+        count++;
+        node = node.next;
+    }
+    list.forEach(function (node) {
+        delete node._loged;
+    });
+    console.log('count: ', count);
+    return count;
+}
+
 function earcut(data, holeIndices, dim) {
 
     dim = dim || 2;
@@ -36,6 +57,8 @@ function earcut(data, holeIndices, dim) {
     }
 
     earcutLinked(outerNode, triangles, dim, minX, minY, size);
+
+    logNode(outerNode);
 
     return triangles;
 }
@@ -78,19 +101,31 @@ function filterPoints(start, end) {
         // Don't remove p , if `p.prev, p & p.next` don't belong to the same polygon(hole).
         var toRemove = false;
         if (!p.steiner) {
-            if (equals(p, p.next)) {
+            if (equals(p, p.next) || equals(p, p.prev) || equals(p.prev, p.next)) {
                 toRemove = true;
             } else if (area(p.prev, p, p.next) === 0) {
-                if (p.prev.parentId === p.parentId && p.next.parentId === p.parentId && p.prev.parentId === p.next.parentId) {
-                    toRemove = true;
+                toRemove = true;
+
+                var prevId = p.prev.parentId;
+                var nodeId = p.parentId;
+                var nextId = p.next.parentId;
+
+                if (prevId && nodeId && prevId !== nodeId) {
+                    toRemove = false;
+                } else if (prevId && nextId && prevId !== nextId) {
+                    toRemove = false;
+                } else if (nodeId && nextId && nodeId !== nextId) {
+                    toRemove = false;
                 }
             }
         }
         if (toRemove) {
+            // console.log(p.x, p.y, p.prev.parentId, p.parentId, p.next.parentId);
             removeNode(p);
             p = end = p.prev;
             if (p === p.next) return null;
             again = true;
+
         } else {
             p = p.next;
         }
@@ -543,6 +578,8 @@ function splitPolygon(a, b) {
 
     a2.parentId = a.parentId;
     b2.parentId = b.parentId;
+    a2.steiner = a.steiner;
+    b2.steiner = b.steiner;
 
     a.next = b;
     b.prev = a;
