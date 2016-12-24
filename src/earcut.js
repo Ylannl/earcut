@@ -37,7 +37,7 @@ function earcut(data, holeIndices, dim) {
 
     earcutLinked(outerNode, triangles, dim, minX, minY, size);
 
-    logNode(outerNode);
+    logNode(/* outerNode */);
 
     return triangles;
 }
@@ -693,7 +693,7 @@ function logNode(node) {
     if (!node) {
         return 0;
     }
-    console.log(node);
+    // console.log(node);
     var list = [];
     var count = 0;
     while (node && !node._loged) {
