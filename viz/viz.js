@@ -143,7 +143,7 @@ ctx.lineJoin = 'round';
 
 for (i = 0; triangles && i < triangles.length; i += 3) {
     var p = triangles.slice(i, i + 3);
-    console.log(p[0],p[1],p[2]);
+    // console.log(p[0] + ',' + p[1] + ',' + p[2]);
     drawPoly([p], 'rgba(255,0,0,0.2)', 'rgba(255,255,0,0.2)');
     // drawPoly([triangles.slice(i, i + 3)], 'rgba(255,0,0,0.0)', 'rgba(255,0,0,0.3)');
 }
