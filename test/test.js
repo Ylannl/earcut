@@ -5,7 +5,7 @@ var test = require('tape'),
     fs = require('fs'),
     path = require('path');
 
-var failed = [];
+var failedTasks = [];
 areaTest('building', 13);
 areaTest('dude', 106);
 areaTest('water', 2482, 0.0008);
@@ -55,7 +55,10 @@ test('empty', function (t) {
 });
 
 setTimeout(function () {
-    console.log(failed);
+    if (failedTasks.length > 0) {
+        console.log('\nFailed tasks : ');
+        console.log(failedTasks.join(' , '));
+    }
 }, 1000);
 
 
@@ -68,9 +71,11 @@ function areaTest(filename, expectedTriangles, expectedDeviation) {
             indices = earcut(data.vertices, data.holes, data.dimensions),
             deviation = earcut.deviation(data.vertices, data.holes, data.dimensions, indices);
 
+        var failed = false;
         if (deviation >= expectedDeviation) {
-            failed.push(filename);
-            console.log('>>>>>>', filename);
+            failed = true;
+            failedTasks.push(filename);
+            console.log('\n==== ', filename);
         }
         t.ok(deviation < expectedDeviation,
             'deviation ' + formatPercent(deviation) + ' is less than ' + formatPercent(expectedDeviation));
@@ -78,13 +83,18 @@ function areaTest(filename, expectedTriangles, expectedDeviation) {
         if (expectedTriangles) {
             var numTriangles = indices.length / 3;
             if (numTriangles !== expectedTriangles) {
-                failed.push(filename);
-                console.log('>>>>>>', filename);
+                failed = true;
+                failedTasks.push(filename);
+                console.log('\n==== ', filename);
             }
             t.ok(numTriangles === expectedTriangles, numTriangles + ' triangles when expected ' + expectedTriangles);
         }
 
         t.end();
+
+        if (failed) {
+            console.log('\n');
+        }
     });
 }
 
