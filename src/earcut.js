@@ -2,27 +2,6 @@
 
 module.exports = earcut;
 
-function logNode(node) {
-    if (!node) {
-        return 0;
-    }
-    console.log(node);
-    var list = [];
-    var count = 0;
-    while (node && !node._loged) {
-        console.log(node.x, node.y, node.parentId);
-        node._loged = 1;
-        list.push(node);
-        count++;
-        node = node.next;
-    }
-    list.forEach(function (node) {
-        delete node._loged;
-    });
-    console.log('count: ', count);
-    return count;
-}
-
 function earcut(data, holeIndices, dim) {
 
     dim = dim || 2;
@@ -95,8 +74,13 @@ function filterPoints(start, end) {
 
     var p = start,
         again;
+
     do {
         again = false;
+
+        var prevId = p.prev.parentId;
+        var nodeId = p.parentId;
+        var nextId = p.next.parentId;
 
         // Don't remove p , if `p.prev, p & p.next` don't belong to the same polygon(hole).
         var toRemove = false;
@@ -106,10 +90,6 @@ function filterPoints(start, end) {
             } else if (area(p.prev, p, p.next) === 0) {
                 toRemove = true;
 
-                var prevId = p.prev.parentId;
-                var nodeId = p.parentId;
-                var nextId = p.next.parentId;
-
                 if (prevId && nodeId && prevId !== nodeId) {
                     toRemove = false;
                 } else if (prevId && nextId && prevId !== nextId) {
@@ -118,14 +98,22 @@ function filterPoints(start, end) {
                     toRemove = false;
                 }
             }
+        } else {
+            // TODO
+            toRemove = false;
+
+            if (equals(p, p.next) || equals(p, p.prev)) {
+                toRemove = true;
+            }
         }
+
         if (toRemove) {
-            // console.log(p.x, p.y, p.prev.parentId, p.parentId, p.next.parentId);
             removeNode(p);
             p = end = p.prev;
-            if (p === p.next) return null;
+            if (p === p.next) {
+                return null;
+            }
             again = true;
-
         } else {
             p = p.next;
         }
@@ -699,3 +687,26 @@ earcut.flatten = function (data) {
     }
     return result;
 };
+
+
+function logNode(node) {
+    if (!node) {
+        return 0;
+    }
+    console.log(node);
+    var list = [];
+    var count = 0;
+    while (node && !node._loged) {
+        console.log(node.x, node.y, node.parentId);
+        node._loged = 1;
+        list.push(node);
+        count++;
+        node = node.next;
+    }
+    list.forEach(function (node) {
+        delete node._loged;
+    });
+    console.log('count: ', count);
+    return count;
+}
+
