@@ -68,13 +68,23 @@ var testPoints = [
 
 // 'water-huge2',
 // 'water-huge',
+
 // 'steiner'
-var testPoints_steiner = [
+var testPoints = [
+[[0,0],[100,0],[100,100],[0,100]],
+[[50,50]],
+[[30,40]],
+[[70,60]],
+[[20,70]]
+]
+
+
+var testPoints1 = [
     [[0,0],[100,0],[100,100],[0,100]],
-    [[50,50]],
-    [[30,40]],
-    [[70,60]],
-    [[20,70]]
+    // [[10,10]],
+    [[40,40]],
+    [[60,60]],
+    // [[20,70]]
 ];
 
 
@@ -124,13 +134,13 @@ var data = earcut.flatten(testPoints);
 
 console.time('earcut');
 // for (var i = 0; i < 1000; i++) {
-    console.log(data.vertices)
-    console.log(data.holes)
-    console.log(data.dimensions)
+    // console.log(data.vertices)
+    // console.log(data.holes)
+    // console.log(data.dimensions)
 var result = earcut(data.vertices, data.holes, data.dimensions);
 // }
 console.timeEnd('earcut');
-console.log(window.filterCount);
+// console.log(window.filterCount);
 
 var triangles = [];
 for (i = 0; i < result.length; i++) {
