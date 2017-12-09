@@ -9,18 +9,14 @@ function earcut(data, holeIndices, dim) {
 
     var hasHoles = holeIndices && holeIndices.length,
         outerLen = hasHoles ? holeIndices[0] * dim : data.length,
-        outerNode = linkedList(data, 0, outerLen, dim, true),
+        outerNode = linkedList(data, 0, outerLen, dim, true, null),
         triangles = [];
-
-    // logNode(outerNode);
 
     if (!outerNode) return triangles;
 
     var minX, minY, maxX, maxY, x, y, invSize;
 
     if (hasHoles) outerNode = eliminateHoles(data, holeIndices, outerNode, dim);
-
-    // logNode(outerNode);
 
     // if the shape is not too simple, we'll use z-order curve hash later; calculate polygon bbox
     if (data.length > 80 * dim) {
@@ -47,26 +43,26 @@ function earcut(data, holeIndices, dim) {
 }
 
 // Create a circular doubly linked list from polygon points in the specified winding order.
-// parentId is used to identify which polygons（holes）the points belong to.
-function linkedList(data, start, end, dim, clockwise, parentId) {
+// holeId is used to identify which polygons（holes）the points belong to.
+function linkedList(data, start, end, dim, clockwise, holeId) {
     var i, last;
 
     if (clockwise === (signedArea(data, start, end, dim) > 0)) {
         for (i = start; i < end; i += dim) {
             last = insertNode(i, data[i], data[i + 1], last);
-            last.parentId = parentId;
+            last.holeId = holeId;
         }
     } else {
         for (i = end - dim; i >= start; i -= dim) {
             last = insertNode(i, data[i], data[i + 1], last);
-            last.parentId = parentId;
+            last.holeId = holeId;
         }
     }
 
     if (last && equals(last, last.next)) {
         removeNode(last);
         last = last.next;
-        last.parentId = parentId;
+        last.holeId = holeId;
     }
 
     return last;
@@ -82,55 +78,32 @@ function filterPoints(start, end) {
     do {
         again = false;
 
-        var prevId = p.prev.parentId;
-        var nodeId = p.parentId;
-        var nextId = p.next.parentId;
+        var prevHole = p.prev.holeId;
+        var currentHole = p.holeId;
+        var nextHole = p.next.holeId;
 
         // Don't remove p , if `p.prev, p & p.next` don't belong to the same polygon(hole).
-        // console.log(prevId, nodeId, nextId);
 
         var toRemove = false;
 
-        // if (!p.steiner && (equals(p, p.next) || area(p.prev, p, p.next) === 0)) {
-        //     toRemove = true;
-        //     if (nodeId === nextId){
-        //         toRemove = false;
-        //     }
-        // }
-
         if (!p.steiner) {
-            if (equals(p, p.next) || equals(p, p.prev) || equals(p.prev, p.next)) {
+            if (equals(p, p.next) || equals(p.prev, p)) {
                 toRemove = true;
             } else if (area(p.prev, p, p.next) === 0) {
                 toRemove = true;
-                // console.log(prevId, nodeId, nextId);
-                if (prevId && nodeId && prevId !== nodeId) {
-                    // toRemove = false;
-                } else if (prevId && nextId && prevId !== nextId) {
+                if (prevHole && nextHole && prevHole !== nextHole && prevHole === currentHole) {
                     toRemove = false;
-                } else if (nodeId && nextId && nodeId !== nextId) {
-                    // toRemove = false;
                 }
             }
-        } else {
-            // TODO
-            toRemove = false;
-            // if (equals(p, p.next) || equals(p, p.prev) || equals(p.prev, p.next)) {
-            //     // if (equals(p, p.next) || equals(p, p.prev)) {
-            //     toRemove = true;
-            // }
         }
 
         if (toRemove) {
-            // console.log(toRemove, p.x, p.y, '--', prevId, nodeId, nextId);
             removeNode(p);
             p = end = p.prev;
             if (p === p.next) {
-                //return null;
                 break;
             }
             again = true;
-
         } else {
             p = p.next;
         }
@@ -311,12 +284,14 @@ function splitEarcut(start, triangles, dim, minX, minY, invSize) {
 // link every hole into the outer loop, producing a single-ring polygon without holes
 function eliminateHoles(data, holeIndices, outerNode, dim) {
     var queue = [],
-        i, len, start, end, list;
+        i, len, start, end, list, holeId;
 
     for (i = 0, len = holeIndices.length; i < len; i++) {
         start = holeIndices[i] * dim;
         end = i < len - 1 ? holeIndices[i + 1] * dim : data.length;
-        list = linkedList(data, start, end, dim, false, 'hole-' + i);
+
+        holeId = i + 1; // ensure holeId != 0 ;
+        list = linkedList(data, start, end, dim, false, holeId);
         if (list === list.next) list.steiner = true;
         queue.push(getLeftmost(list));
     }
@@ -579,10 +554,8 @@ function splitPolygon(a, b) {
         an = a.next,
         bp = b.prev;
 
-    a2.parentId = a.parentId;
-    b2.parentId = b.parentId;
-    //a2.steiner = a.steiner;
-    //b2.steiner = b.steiner;
+    a2.holeId = a.holeId;
+    b2.holeId = b.holeId;
 
     a.next = b;
     b.prev = a;
@@ -706,28 +679,3 @@ earcut.flatten = function(data) {
     }
     return result;
 };
-
-
-function logNode(node) {
-    if (!node) {
-        console.log('count: null');
-        return 0;
-    }
-    // console.log(node);
-    var list = [];
-    var count = 0;
-    while (node && !node._loged) {
-        // console.log(node.x, node.y, node.parentId);
-        node._loged = 1;
-        list.push(node);
-        count++;
-        node = node.next;
-    }
-    list.forEach(function(node, idx) {
-        delete node._loged;
-        console.log(idx, node.i, ' : ', node.x, node.y)
-    });
-    console.log('count: ', count);
-    console.log('list: ', list);
-    return count;
-}
