@@ -82,7 +82,6 @@ function filterPoints(start, end) {
         var currentHole = p.holeId;
         var nextHole = p.next.holeId;
 
-
         var toRemove = false;
 
         if (!p.steiner) {
