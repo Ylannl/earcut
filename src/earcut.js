@@ -87,13 +87,18 @@ function filterPoints(start, end) {
         if (!p.steiner) {
             if (equals(p, p.next) || equals(p.prev, p)) {
                 toRemove = true;
-            } else if (area(p.prev, p, p.next) === 0) {
+            } else if (!prevHole || !nextHole || prevHole === nextHole || prevHole !== currentHole) {
                 // If `p.prev, p & p.next` are on holes (not outer edge) ,
                 // And `p.prev & p` are on the same hole ,
+                // And `p.prev, p & p.next` are collinear,
                 // Then do NOT remove `p` .
-                if (prevHole && nextHole && prevHole !== nextHole && prevHole === currentHole) {
-                    toRemove = false;
-                } else {
+
+                // In other words,
+                // When `p.prev, p & p.next` are collinear,
+                // If `p.prev, p & p.next` are on the outer edge,
+                // Or `p.prev & p` are on different holes ,
+                // Then do REMOVE `p`
+                if (area(p.prev, p, p.next) === 0) {
                     toRemove = true;
                 }
             }
@@ -623,7 +628,7 @@ function Node(i, x, y) {
 
 // return a percentage difference between the polygon area and its triangulation area;
 // used to verify correctness of triangulation
-earcut.deviation = function (data, holeIndices, dim, triangles) {
+earcut.deviation = function(data, holeIndices, dim, triangles) {
     var hasHoles = holeIndices && holeIndices.length;
     var outerLen = hasHoles ? holeIndices[0] * dim : data.length;
 
@@ -660,7 +665,7 @@ function signedArea(data, start, end, dim) {
 }
 
 // turn a polygon in a multi-dimensional array form (e.g. as in GeoJSON) into a form Earcut accepts
-earcut.flatten = function (data) {
+earcut.flatten = function(data) {
     var dim = data[0][0].length;
     var result = {
         vertices: [],
