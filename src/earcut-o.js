@@ -9,7 +9,7 @@ function earcut(data, holeIndices, dim) {
 
     var hasHoles = holeIndices && holeIndices.length,
         outerLen = hasHoles ? holeIndices[0] * dim : data.length,
-        outerNode = linkedList(data, 0, outerLen, dim, true, null),
+        outerNode = linkedList(data, 0, outerLen, dim, true),
         triangles = [];
 
     if (!outerNode) return triangles;
@@ -42,27 +42,19 @@ function earcut(data, holeIndices, dim) {
     return triangles;
 }
 
-// Create a circular doubly linked list from polygon points in the specified winding order.
-// holeId is used to identify which polygons（holes）the points belong to.
-function linkedList(data, start, end, dim, clockwise, holeId) {
+// create a circular doubly linked list from polygon points in the specified winding order
+function linkedList(data, start, end, dim, clockwise) {
     var i, last;
 
     if (clockwise === (signedArea(data, start, end, dim) > 0)) {
-        for (i = start; i < end; i += dim) {
-            last = insertNode(i, data[i], data[i + 1], last);
-            last.holeId = holeId;
-        }
+        for (i = start; i < end; i += dim) last = insertNode(i, data[i], data[i + 1], last);
     } else {
-        for (i = end - dim; i >= start; i -= dim) {
-            last = insertNode(i, data[i], data[i + 1], last);
-            last.holeId = holeId;
-        }
+        for (i = end - dim; i >= start; i -= dim) last = insertNode(i, data[i], data[i + 1], last);
     }
 
     if (last && equals(last, last.next)) {
         removeNode(last);
         last = last.next;
-        last.holeId = holeId;
     }
 
     return last;
@@ -78,39 +70,12 @@ function filterPoints(start, end) {
     do {
         again = false;
 
-        var prevHole = p.prev.holeId;
-        var currentHole = p.holeId;
-        var nextHole = p.next.holeId;
-
-        var toRemove = false;
-
-        if (!p.steiner) {
-            if (equals(p, p.next) || equals(p.prev, p)) {
-                toRemove = true;
-            } else if (!prevHole || !nextHole || prevHole === nextHole || prevHole !== currentHole) {
-                // When `p.prev, p & p.next` are collinear,
-                // If `p.prev, p & p.next` are on holes (not outer edge) ,
-                // And `p.prev & p` are on the same hole ,
-                // Then do NOT remove `p` .
-
-                // In other words,
-                // When `p.prev, p & p.next` are collinear,
-                // If `p.prev, p & p.next` are on the outer edge,
-                // Or `p.prev & p` are on different holes ,
-                // Then do REMOVE `p`
-                if (area(p.prev, p, p.next) === 0) {
-                    toRemove = true;
-                }
-            }
-        }
-
-        if (toRemove) {
+        if (!p.steiner && (equals(p, p.next) || area(p.prev, p, p.next) === 0)) {
             removeNode(p);
             p = end = p.prev;
-            if (p === p.next) {
-                break;
-            }
+            if (p === p.next) break;
             again = true;
+
         } else {
             p = p.next;
         }
@@ -157,12 +122,12 @@ function earcutLinked(ear, triangles, dim, minX, minY, invSize, pass) {
             if (!pass) {
                 earcutLinked(filterPoints(ear), triangles, dim, minX, minY, invSize, 1);
 
-                // if this didn't work, try curing all small self-intersections locally
+            // if this didn't work, try curing all small self-intersections locally
             } else if (pass === 1) {
                 ear = cureLocalIntersections(ear, triangles, dim);
                 earcutLinked(ear, triangles, dim, minX, minY, invSize, 2);
 
-                // as a last resort, try splitting the remaining polygon into two
+            // as a last resort, try splitting the remaining polygon into two
             } else if (pass === 2) {
                 splitEarcut(ear, triangles, dim, minX, minY, invSize);
             }
@@ -178,18 +143,14 @@ function isEar(ear) {
         b = ear,
         c = ear.next;
 
-    if (area(a, b, c) >= 0) {
-        return false; // reflex, can't be an ear
-    }
+    if (area(a, b, c) >= 0) return false; // reflex, can't be an ear
 
     // now make sure we don't have other points inside the potential ear
     var p = ear.next.next;
 
     while (p !== ear.prev) {
         if (pointInTriangle(a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y) &&
-            area(p.prev, p, p.next) >= 0) {
-            return false;
-        }
+            area(p.prev, p, p.next) >= 0) return false;
         p = p.next;
     }
 
@@ -213,36 +174,24 @@ function isEarHashed(ear, minX, minY, invSize) {
     var minZ = zOrder(minTX, minTY, minX, minY, invSize),
         maxZ = zOrder(maxTX, maxTY, minX, minY, invSize);
 
-    var p = ear.prevZ,
-        n = ear.nextZ;
+    // first look for points inside the triangle in increasing z-order
+    var p = ear.nextZ;
 
-    // look for points inside the triangle in both directions
-    while (p && p.z >= minZ && n && n.z <= maxZ) {
+    while (p && p.z <= maxZ) {
         if (p !== ear.prev && p !== ear.next &&
             pointInTriangle(a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y) &&
             area(p.prev, p, p.next) >= 0) return false;
-        p = p.prevZ;
-
-        if (n !== ear.prev && n !== ear.next &&
-            pointInTriangle(a.x, a.y, b.x, b.y, c.x, c.y, n.x, n.y) &&
-            area(n.prev, n, n.next) >= 0) return false;
-        n = n.nextZ;
+        p = p.nextZ;
     }
 
-    // look for remaining points in decreasing z-order
+    // then look for points in decreasing z-order
+    p = ear.prevZ;
+
     while (p && p.z >= minZ) {
         if (p !== ear.prev && p !== ear.next &&
             pointInTriangle(a.x, a.y, b.x, b.y, c.x, c.y, p.x, p.y) &&
             area(p.prev, p, p.next) >= 0) return false;
         p = p.prevZ;
-    }
-
-    // look for remaining points in increasing z-order
-    while (n && n.z <= maxZ) {
-        if (n !== ear.prev && n !== ear.next &&
-            pointInTriangle(a.x, a.y, b.x, b.y, c.x, c.y, n.x, n.y) &&
-            area(n.prev, n, n.next) >= 0) return false;
-        n = n.nextZ;
     }
 
     return true;
@@ -302,14 +251,12 @@ function splitEarcut(start, triangles, dim, minX, minY, invSize) {
 // link every hole into the outer loop, producing a single-ring polygon without holes
 function eliminateHoles(data, holeIndices, outerNode, dim) {
     var queue = [],
-        i, len, start, end, list, holeId;
+        i, len, start, end, list;
 
     for (i = 0, len = holeIndices.length; i < len; i++) {
         start = holeIndices[i] * dim;
         end = i < len - 1 ? holeIndices[i + 1] * dim : data.length;
-
-        holeId = i + 1; // ensure holeId != 0 ;
-        list = linkedList(data, start, end, dim, false, holeId);
+        list = linkedList(data, start, end, dim, false);
         if (list === list.next) list.steiner = true;
         queue.push(getLeftmost(list));
     }
@@ -381,7 +328,7 @@ function findHoleBridge(hole, outerNode) {
 
     while (p !== stop) {
         if (hx >= p.x && p.x >= mx && hx !== p.x &&
-            pointInTriangle(hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p.x, p.y)) {
+                pointInTriangle(hy < my ? hx : qx, hy, mx, my, hy < my ? qx : hx, hy, p.x, p.y)) {
 
             tan = Math.abs(hy - p.y) / (hx - p.x); // tangential
 
@@ -533,7 +480,7 @@ function intersectsPolygon(a, b) {
     var p = a;
     do {
         if (p.i !== a.i && p.next.i !== a.i && p.i !== b.i && p.next.i !== b.i &&
-            intersects(p, p.next, a, b)) return true;
+                intersects(p, p.next, a, b)) return true;
         p = p.next;
     } while (p !== a);
 
@@ -555,7 +502,7 @@ function middleInside(a, b) {
         py = (a.y + b.y) / 2;
     do {
         if (((p.y > py) !== (p.next.y > py)) && p.next.y !== p.y &&
-            (px < (p.next.x - p.x) * (py - p.y) / (p.next.y - p.y) + p.x))
+                (px < (p.next.x - p.x) * (py - p.y) / (p.next.y - p.y) + p.x))
             inside = !inside;
         p = p.next;
     } while (p !== a);
@@ -570,9 +517,6 @@ function splitPolygon(a, b) {
         b2 = new Node(b.i, b.x, b.y),
         an = a.next,
         bp = b.prev;
-
-    a2.holeId = a.holeId;
-    b2.holeId = b.holeId;
 
     a.next = b;
     b.prev = a;
@@ -677,13 +621,9 @@ function signedArea(data, start, end, dim) {
 
 // turn a polygon in a multi-dimensional array form (e.g. as in GeoJSON) into a form Earcut accepts
 earcut.flatten = function (data) {
-    var dim = data[0][0].length;
-    var result = {
-        vertices: [],
-        holes: [],
-        dimensions: dim
-    };
-    var holeIndex = 0;
+    var dim = data[0][0].length,
+        result = {vertices: [], holes: [], dimensions: dim},
+        holeIndex = 0;
 
     for (var i = 0; i < data.length; i++) {
         for (var j = 0; j < data[i].length; j++) {
