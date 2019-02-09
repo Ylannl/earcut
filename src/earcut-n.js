@@ -672,7 +672,7 @@ function Node(i, x, y) {
 
 // return a percentage difference between the polygon area and its triangulation area;
 // used to verify correctness of triangulation
-earcut.deviation = function(data, holeIndices, dim, triangles) {
+earcut.deviation = function (data, holeIndices, dim, triangles) {
     var hasHoles = holeIndices && holeIndices.length;
     var outerLen = hasHoles ? holeIndices[0] * dim : data.length;
 
@@ -709,7 +709,7 @@ function signedArea(data, start, end, dim) {
 }
 
 // turn a polygon in a multi-dimensional array form (e.g. as in GeoJSON) into a form Earcut accepts
-earcut.flatten = function(data) {
+earcut.flatten = function (data) {
     var dim = data[0][0].length;
     var result = {
         vertices: [],
@@ -746,7 +746,7 @@ function logNode(node) {
         count++;
         node = node.next;
     }
-    list.forEach(function(node) {
+    list.forEach(function (node) {
         delete node._loged;
     });
     console.log('count: ', count);
